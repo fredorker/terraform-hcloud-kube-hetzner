@@ -61,11 +61,11 @@ locals {
   ]...)
 
   # The main network cidr that all subnets will be created upon
-  network_ipv4_cidr = "10.0.0.0/8"
+  network_ipv4_cidr = "10.44.0.0/16"
 
-  # The first two subnets are respectively the default subnet 10.0.0.0/16 use for potientially anything and 10.1.0.0/16 used for control plane nodes.
+  # The first two subnets are respectively the default subnet 10.44.0.0/16 use for potientially anything and 10.44.0.0/16 used for control plane nodes.
   # the rest of the subnets are for agent nodes in each nodepools.
-  network_ipv4_subnets = [for index in range(256) : cidrsubnet(local.network_ipv4_cidr, 8, index)]
+  network_ipv4_subnets = [for index in range(256) : cidrsubnet(local.network_ipv4_cidr, 16, index)]
 
   # if we are in a single cluster config, we use the default klipper lb instead of Hetzner LB
   control_plane_count    = sum([for v in var.control_plane_nodepools : v.count])
@@ -100,7 +100,7 @@ locals {
   hetzner_cloud_api_ipv4        = "213.239.246.1/32"
 
   # internal Pod CIDR, used for the controller and currently for calico
-  cluster_cidr_ipv4 = "10.42.0.0/16"
+  cluster_cidr_ipv4 = "10.44.224.0/19"
 
   whitelisted_ips = [
     local.network_ipv4_cidr,
@@ -110,6 +110,15 @@ locals {
   ]
 
   base_firewall_rules = concat([
+    # allow incoming wireguard connectios on port 30000
+    {
+      direction  = "in"
+      protocol   = "udp"
+      port       = "30000"
+      source_ips = [
+        "0.0.0.0/0"
+      ]
+    },
     # Allowing internal cluster traffic and Hetzner metadata service and cloud API IPs
     {
       direction  = "in"
@@ -367,10 +376,10 @@ service:
 %{endif~}
 additionalArguments:
 %{if !local.using_klipper_lb~}
-- "--entryPoints.web.proxyProtocol.trustedIPs=127.0.0.1/32,10.0.0.0/8"
-- "--entryPoints.websecure.proxyProtocol.trustedIPs=127.0.0.1/32,10.0.0.0/8"
-- "--entryPoints.web.forwardedHeaders.trustedIPs=127.0.0.1/32,10.0.0.0/8"
-- "--entryPoints.websecure.forwardedHeaders.trustedIPs=127.0.0.1/32,10.0.0.0/8"
+- "--entryPoints.web.proxyProtocol.trustedIPs=127.0.0.1/32,10.44.0.0/16"
+- "--entryPoints.websecure.proxyProtocol.trustedIPs=127.0.0.1/32,10.44.0.0/16"
+- "--entryPoints.web.forwardedHeaders.trustedIPs=127.0.0.1/32,10.44.0.0/16"
+- "--entryPoints.websecure.forwardedHeaders.trustedIPs=127.0.0.1/32,10.44.0.0/16"
 %{endif~}
 %{for option in var.traefik_additional_options~}
 - "${option}"
