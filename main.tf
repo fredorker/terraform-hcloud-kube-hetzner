@@ -21,7 +21,7 @@ resource "hcloud_network_subnet" "control_plane" {
   network_id   = hcloud_network.k3s.id
   type         = "cloud"
   network_zone = var.network_region
-  ip_range     = 10.44.0.0/18
+  ip_range     = "10.44.0.0/18"
 }
 
 # Here we start at the beginning of the subnets cird array
@@ -30,7 +30,7 @@ resource "hcloud_network_subnet" "agent" {
   network_id   = hcloud_network.k3s.id
   type         = "cloud"
   network_zone = var.network_region
-  ip_range     = 10.44.64.0/18
+  ip_range     = "10.44.64.0/18"
 }
 
 resource "hcloud_firewall" "k3s" {
